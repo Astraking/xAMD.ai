@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({Key? key}) : super(key: key);
+  const HistoryPage({super.key});
 
   @override
   HistoryPageState createState() => HistoryPageState();
@@ -66,7 +66,7 @@ class HistoryPageState extends State<HistoryPage> {
                     ),
                     Text(
                       '${_images![index].dateTime}',
-                      style: TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ],
                 );

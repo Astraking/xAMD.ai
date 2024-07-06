@@ -10,6 +10,7 @@ void main() {
 void _setupLogging() {
   Logger.root.level = Level.ALL; // Set the root logger level to ALL
   Logger.root.onRecord.listen((record) {
+    // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
 }
@@ -27,14 +28,6 @@ class AMDScreeningApp extends StatelessWidget {
           secondary: Colors.orange,
         ),
       ),
-      darkTheme: ThemeData(
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.red,
-          secondary: Colors.orange,
-        ),
-      ),
-      themeMode: ThemeMode
-          .system, // Change to ThemeMode.light or ThemeMode.dark to test themes
       home: const OnboardingPage(),
     );
   }

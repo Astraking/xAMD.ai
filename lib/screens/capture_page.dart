@@ -61,6 +61,7 @@ class CapturePageState extends State<CapturePage> {
   }
 
   Future<void> _processImage(File image) async {
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -78,6 +79,7 @@ class CapturePageState extends State<CapturePage> {
       final gradcamFile = File('${directory.path}/gradcam.png');
       gradcamFile.writeAsBytesSync(img.encodePng(gradcamImage));
 
+      if (!mounted) return;
       setState(() {
         _results = results;
         _gradcamImage = gradcamFile;
@@ -85,20 +87,24 @@ class CapturePageState extends State<CapturePage> {
 
       Navigator.pop(context);
 
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                ResultsPage(results: _results, gradcamImage: _gradcamImage!)),
+          builder: (context) =>
+              ResultsPage(results: _results, gradcamImage: _gradcamImage!),
+        ),
       );
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Error'),
-            content: const Text('An error occurred while processing the image.'),
+            content:
+                const Text('An error occurred while processing the image.'),
             actions: <Widget>[
               TextButton(
                 child: const Text('OK'),

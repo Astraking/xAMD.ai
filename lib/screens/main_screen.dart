@@ -9,31 +9,19 @@ import 'package:amd_app/predictor.dart';
 import 'results_page.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({super.key});
 
   @override
   MainScreenState createState() => MainScreenState();
 }
 
 class MainScreenState extends State<MainScreen> {
-  late ThemeData _currentTheme;
-  late ThemeMode _currentThemeMode;
+  // late ThemeData _currentTheme;
 
   @override
   void initState() {
     super.initState();
-    _currentTheme = ThemeManager.instanceOf(context).lightTheme;
-    _currentThemeMode = ThemeManager.instanceOf(context).themeMode;
-  }
-
-  void updateTheme() {
-    setState(() {
-      _currentTheme =
-          ThemeManager.instanceOf(context).themeMode == ThemeMode.light
-              ? ThemeManager.instanceOf(context).lightTheme
-              : ThemeManager.instanceOf(context).darkTheme;
-      _currentThemeMode = ThemeManager.instanceOf(context).themeMode;
-    });
+    // _currentTheme = ThemeData.light(); // Set a default theme if needed
   }
 
   void _showSourceBottomSheet(BuildContext context) {
@@ -45,19 +33,19 @@ class MainScreenState extends State<MainScreen> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               ListTile(
-                leading: Icon(Icons.camera_alt),
-                title: Text('Camera'),
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
                 onTap: () {
                   Navigator.pop(context);
-                  _getImage(context, ImageSource.camera);
+                  _getImage(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_album),
-                title: Text('Gallery'),
+                leading: const Icon(Icons.photo_album),
+                title: const Text('Gallery'),
                 onTap: () {
                   Navigator.pop(context);
-                  _getImage(context, ImageSource.gallery);
+                  _getImage(ImageSource.gallery);
                 },
               ),
             ],
@@ -67,21 +55,23 @@ class MainScreenState extends State<MainScreen> {
     );
   }
 
-  Future<void> _getImage(BuildContext context, ImageSource source) async {
+  Future<void> _getImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
     if (pickedFile != null) {
       File image = File(pickedFile.path);
-      await _processImage(context, image);
+      if (!mounted) return;
+      await _processImage(image);
     }
   }
 
-  Future<void> _processImage(BuildContext context, File image) async {
+  Future<void> _processImage(File image) async {
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return Center(child: CircularProgressIndicator());
+        return const Center(child: CircularProgressIndicator());
       },
     );
 
@@ -90,25 +80,30 @@ class MainScreenState extends State<MainScreen> {
       var results = await Predictor.runModelOnImage(image);
       var gradcamImage = await Predictor.generateGradCAM(image);
 
+      if (!mounted) return;
       Navigator.pop(context);
 
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                ResultsPage(results: results, gradcamImage: gradcamImage)),
+          builder: (context) =>
+              ResultsPage(results: results, gradcamImage: gradcamImage),
+        ),
       );
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Error'),
-            content: Text('An error occurred while processing the image.'),
+            title: const Text('Error'),
+            content:
+                const Text('An error occurred while processing the image.'),
             actions: <Widget>[
               TextButton(
-                child: Text('OK'),
+                child: const Text('OK'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -125,31 +120,6 @@ class MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AMD Screening'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.lightbulb_outline),
-            onPressed: () {
-              final Brightness currentBrightness =
-                  MediaQuery.of(context).platformBrightness;
-              const ThemeMode nextMode = ThemeMode.system;
-
-              // Toggle between light and dark mode
-              if (currentBrightness == Brightness.light) {
-                // Switch to dark mode
-                ThemeManager.instanceOf(context).changeTheme(
-                  ThemeManager.instanceOf(context).darkTheme,
-                  nextMode,
-                );
-              } else {
-                // Switch to light mode
-                ThemeManager.instanceOf(context).changeTheme(
-                  ThemeManager.instanceOf(context).lightTheme,
-                  nextMode,
-                );
-              }
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -211,54 +181,5 @@ class MainScreenState extends State<MainScreen> {
         ),
       ),
     );
-  }
-}
-
-class ThemeManager {
-  static ThemeManager? _instance;
-  late ThemeData _lightTheme;
-  late ThemeData _darkTheme;
-  late ThemeMode _themeMode;
-  late BuildContext _context;
-
-  ThemeManager._();
-
-  factory ThemeManager.instanceOf(BuildContext context) {
-    if (_instance == null) {
-      _instance = ThemeManager._();
-      _instance!._context = context;
-      _instance!._lightTheme = ThemeData.light().copyWith(
-        colorScheme: const ColorScheme.light(
-          primary: Colors.red,
-          secondary: Colors.orange,
-        ),
-      );
-      _instance!._darkTheme = ThemeData.dark().copyWith(
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.red,
-          secondary: Colors.orange,
-        ),
-      );
-      _instance!._themeMode = ThemeMode.system;
-    }
-    return _instance!;
-  }
-
-  ThemeData get lightTheme => _lightTheme;
-  ThemeData get darkTheme => _darkTheme;
-  ThemeMode get themeMode => _themeMode;
-
-  void changeTheme(ThemeData theme, ThemeMode mode) {
-    _lightTheme = theme.copyWith();
-    _darkTheme = theme.copyWith();
-    _themeMode = mode;
-    _updateTheme();
-  }
-
-  void _updateTheme() {
-    final state = _context.findRootAncestorStateOfType<MainScreenState>();
-    if (state != null) {
-      state.updateTheme();
-    }
   }
 }

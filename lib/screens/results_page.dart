@@ -6,8 +6,7 @@ class ResultsPage extends StatelessWidget {
   final dynamic gradcamImage;
 
   const ResultsPage(
-      {Key? key, required this.results, required this.gradcamImage})
-      : super(key: key);
+      {super.key, required this.results, required this.gradcamImage});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +19,7 @@ class ResultsPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text('Results: $results'),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildImage(),
           ],
         ),
