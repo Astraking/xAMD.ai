@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'capture_page.dart';
 import 'info_page.dart';
 import 'help_page.dart';
 import 'history_page.dart';
 import '../widgets/custom_button.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:amd_app/predictor.dart';
+import 'results_page.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
   MainScreenState createState() => MainScreenState();
@@ -31,6 +34,90 @@ class MainScreenState extends State<MainScreen> {
               : ThemeManager.instanceOf(context).darkTheme;
       _currentThemeMode = ThemeManager.instanceOf(context).themeMode;
     });
+  }
+
+  void _showSourceBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Camera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(context, ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_album),
+                title: Text('Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(context, ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _getImage(BuildContext context, ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      File image = File(pickedFile.path);
+      await _processImage(context, image);
+    }
+  }
+
+  Future<void> _processImage(BuildContext context, File image) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(child: CircularProgressIndicator());
+      },
+    );
+
+    try {
+      await Predictor.loadModel();
+      var results = await Predictor.runModelOnImage(image);
+      var gradcamImage = await Predictor.generateGradCAM(image);
+
+      Navigator.pop(context);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ResultsPage(results: results, gradcamImage: gradcamImage)),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('An error occurred while processing the image.'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -88,12 +175,7 @@ class MainScreenState extends State<MainScreen> {
             CustomButton(
               text: 'Capture',
               icon: Icons.camera_alt,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CapturePage()),
-                );
-              },
+              onPressed: () => _showSourceBottomSheet(context),
             ),
             CustomButton(
               text: 'Info',

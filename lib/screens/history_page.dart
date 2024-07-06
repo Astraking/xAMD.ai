@@ -19,15 +19,22 @@ class HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _loadImages() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final List<FileSystemEntity> images = directory.listSync();
-    setState(() {
-      _images = images;
-    });
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final List<FileSystemEntity> images = directory.listSync();
+      setState(() {
+        _images = images;
+      });
+    } catch (e) {
+      print('Error loading images: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Calculate standard width and height based on screen size
+    final double itemSize = MediaQuery.of(context).size.width / 3.5;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('History'),
@@ -40,9 +47,30 @@ class HistoryPageState extends State<HistoryPage> {
               ),
               itemCount: _images!.length,
               itemBuilder: (context, index) {
-                return Image.file(File(_images![index].path));
+                return _buildImage(File(_images![index].path), itemSize);
               },
             ),
+    );
+  }
+
+  Widget _buildImage(File imageFile, double itemSize) {
+    return FutureBuilder(
+      future: imageFile.exists(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data == true) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              imageFile,
+              width: itemSize,
+              height: itemSize,
+              fit: BoxFit.cover,
+            ),
+          );
+        } else {
+          return const SizedBox.shrink();
+        }
+      },
     );
   }
 }

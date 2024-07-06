@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:logging/logging.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:image/image.dart' as img;
+import 'package:amd_app/predictor.dart';
+import 'results_page.dart';
 
 class CapturePage extends StatefulWidget {
   const CapturePage({super.key});
@@ -12,18 +15,102 @@ class CapturePage extends StatefulWidget {
 
 class CapturePageState extends State<CapturePage> {
   File? _image;
+  List? _results;
+  File? _gradcamImage;
   final picker = ImagePicker();
-  final Logger _logger = Logger('CapturePageState');
 
-  Future<void> getImage(ImageSource source) async {
+  void _showSourceBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_album),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _getImage(ImageSource source) async {
     final pickedFile = await picker.pickImage(source: source);
-    setState(() {
-      if (pickedFile != null) {
+    if (pickedFile != null) {
+      setState(() {
         _image = File(pickedFile.path);
-      } else {
-        _logger.warning('No image selected.');
-      }
-    });
+      });
+      await _processImage(_image!);
+    }
+  }
+
+  Future<void> _processImage(File image) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+
+    try {
+      await Predictor.loadModel();
+      var results = await Predictor.runModelOnImage(image);
+      var gradcamImage = await Predictor.generateGradCAM(image);
+
+      final directory = await getApplicationDocumentsDirectory();
+      final gradcamFile = File('${directory.path}/gradcam.png');
+      gradcamFile.writeAsBytesSync(img.encodePng(gradcamImage));
+
+      setState(() {
+        _results = results;
+        _gradcamImage = gradcamFile;
+      });
+
+      Navigator.pop(context);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ResultsPage(results: _results, gradcamImage: _gradcamImage!)),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: const Text('An error occurred while processing the image.'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -36,17 +123,9 @@ class CapturePageState extends State<CapturePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            _image == null
-                ? const Text('No image selected.')
-                : Image.file(_image!),
-            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => getImage(ImageSource.camera),
+              onPressed: () => _showSourceBottomSheet(context),
               child: const Text('Capture Image'),
-            ),
-            ElevatedButton(
-              onPressed: () => getImage(ImageSource.gallery),
-              child: const Text('Select from Gallery'),
             ),
           ],
         ),
