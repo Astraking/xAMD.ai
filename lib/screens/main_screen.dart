@@ -7,83 +7,63 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:amd_app/predictor.dart';
 import 'results_page.dart';
+import 'test_images_page.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
   MainScreenState createState() => MainScreenState();
 }
 
 class MainScreenState extends State<MainScreen> {
-  // late ThemeData _currentTheme;
-
-  @override
-  void initState() {
-    super.initState();
-    // _currentTheme = ThemeData.light(); // Set a default theme if needed
-  }
-
-  void _showSourceBottomSheet(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _showSourceBottomSheet(BuildContext context) async {
+    await showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Camera'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _getImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_album),
-                title: const Text('Gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _getImage(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => _getImage(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_album),
+              title: const Text('Gallery'),
+              onTap: () => _getImage(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Future<void> _getImage(ImageSource source) async {
+  Future<void> _getImage(BuildContext context, ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
     if (pickedFile != null) {
-      File image = File(pickedFile.path);
-      if (!mounted) return;
-      await _processImage(image);
+      final image = File(pickedFile.path);
+      await _processImage(context, image);
     }
   }
 
-  Future<void> _processImage(File image) async {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
-
+  Future<void> _processImage(BuildContext context, File image) async {
     try {
-      await Predictor.loadModel();
-      var results = await Predictor.runModelOnImage(image);
-      var gradcamImage = await Predictor.generateGradCAM(image);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) =>
+            const Center(child: CircularProgressIndicator()),
+      );
 
-      if (!mounted) return;
+      await Predictor.loadModel();
+      final results = await Predictor.runModelOnImage(image);
+      final gradcamImage = await Predictor.generateGradCAM(image);
+
       Navigator.pop(context);
 
-      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -92,25 +72,20 @@ class MainScreenState extends State<MainScreen> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
       Navigator.pop(context);
+
       showDialog(
         context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Error'),
-            content:
-                const Text('An error occurred while processing the image.'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
+        builder: (BuildContext context) => AlertDialog(
+          title: const Text('Error'),
+          content: const Text('An error occurred while processing the image.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
       );
     }
   }
@@ -135,47 +110,60 @@ class MainScreenState extends State<MainScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.asset(
-                'assets/images/pic1.jpg', // Make sure to add this image to your assets
+                'assets/images/pic1.jpg', // Ensure this image exists in your assets folder
                 width: 400,
                 height: 200,
                 fit: BoxFit.cover,
               ),
             ),
             const SizedBox(height: 20),
-            CustomButton(
-              text: 'Capture',
-              icon: Icons.camera_alt,
-              onPressed: () => _showSourceBottomSheet(context),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 2.5,
+              children: [
+                CustomButton(
+                  text: 'Capture',
+                  icon: Icons.camera_alt,
+                  onPressed: () => _showSourceBottomSheet(context),
+                ),
+                CustomButton(
+                  text: 'Info',
+                  icon: Icons.info,
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const InfoPage())),
+                ),
+                CustomButton(
+                  text: 'Help',
+                  icon: Icons.help,
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const HelpPage())),
+                ),
+                CustomButton(
+                  text: 'History',
+                  icon: Icons.history,
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const HistoryPage())),
+                ),
+              ],
             ),
+            const SizedBox(height: 20),
             CustomButton(
-              text: 'Info',
-              icon: Icons.info,
-              onPressed: () {
-                Navigator.push(
+              text: 'Test Images',
+              icon: Icons.image,
+              onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const InfoPage()),
-                );
-              },
-            ),
-            CustomButton(
-              text: 'Help',
-              icon: Icons.help,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HelpPage()),
-                );
-              },
-            ),
-            CustomButton(
-              text: 'History',
-              icon: Icons.history,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HistoryPage()),
-                );
-              },
+                  MaterialPageRoute(
+                      builder: (context) => const TestImagesPage())),
+              fullWidth: true,
             ),
           ],
         ),

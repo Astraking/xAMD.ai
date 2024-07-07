@@ -66,7 +66,7 @@ class OnboardingPageState extends State<OnboardingPage> {
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color.fromARGB(255, 14, 13, 13),
             ),
             textAlign: TextAlign.center,
           ),
@@ -110,27 +110,28 @@ class OnboardingPageState extends State<OnboardingPage> {
             },
             children: _buildPages(),
           ),
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: currentIndex == index
-                        ? Colors.red // Example primary color
-                        : Colors.grey,
-                  ),
-                );
-              }),
+          if (currentIndex != 2) // Only show indicators if not on the last page
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: currentIndex == index
+                          ? Colors.red // Example primary color
+                          : Colors.grey,
+                    ),
+                  );
+                }),
+              ),
             ),
-          ),
         ],
       ),
     );

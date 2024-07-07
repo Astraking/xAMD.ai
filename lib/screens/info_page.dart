@@ -7,7 +7,7 @@ class InfoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Help'),
+        title: const Text('Info'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -32,7 +32,7 @@ class InfoPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'How to use the app',
+                        'What is AMD?',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
