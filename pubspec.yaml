@@ -73,7 +73,7 @@ flutter:
     - assets/images/pic3.jpg
     - assets/images/pic4.jpg
     - assets/images/pic5.jpg
-    - assets/my_model_final.tflite
+    - assets/amd_classification_model.tflite
     - assets/labels.txt
     - assets/images/normal.jpg
     - assets/images/amd.jpg
